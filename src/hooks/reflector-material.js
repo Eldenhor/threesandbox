@@ -94,7 +94,8 @@ class ReflectorMaterialImpl extends MeshPhysicalMaterial {
         // vec4 baseWater = texture2D( tDiffuse, uv);
         vec4 base = texture2DProj( tDiffuse, my_vUv );
         // vec4 mixedBase = mix(base, baseWater, myTexelRoughness.r > 0.5 ? 0.4 : 0.8);
-        vec4 mixedBase = mix(base, myTexelRoughness, myTexelRoughness.r > 0.5 ? 0.2 : 0.8);
+        // vec4 mixedBase = mix(base, myTexelRoughness, myTexelRoughness.r > 0.5 ? 0.2 : 0.8);
+        vec4 mixedBase = mix(base, base, myTexelRoughness.r > 0.5 ? 0.2 : 0.8);
         mixedBase *= 1.0 - myTexelRoughness.g;
         diffuseColor.rgb += reflectorOpacity * mixedBase.rgb * 1.2;
       `

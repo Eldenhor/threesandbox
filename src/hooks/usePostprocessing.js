@@ -105,7 +105,7 @@ function usePostprocessing(reflectorPipeline = []) {
     const effectPass = new EffectPass(camera, SMAA, edgesTextureEffect, weightsTextureEffect, BLOOM, NOISE);
     const aoPass = new EffectPass(camera, AOSMAA, SSAO, textureEffect);
     // const aoPass = new EffectPass(camera, AOSMAA, SSAO, textureEffect);
-    const effectPassChroAbb = new EffectPass(camera, CHROMATIC_ABERRATION);
+    const chroAbbPass = new EffectPass(camera, CHROMATIC_ABERRATION);
 
     reflectorPipeline.forEach((pass) => composer.addPass(pass));
 
@@ -114,7 +114,7 @@ function usePostprocessing(reflectorPipeline = []) {
     composer.addPass(depthDownsamplingPass);
     composer.addPass(aoPass);
     // composer.addPass(effectPass)
-    // composer.addPass(effectPassChroAbb);
+    composer.addPass(chroAbbPass);
 
     return [composer];
   }, [gl, scene, camera, reflectorPipeline, smaa]);

@@ -1,16 +1,17 @@
 import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
 import styled from "styled-components";
-import { Canvas, extend, useFrame, useThree } from "react-three-fiber";
-import { Box, OrbitControls, Plane, Reflector, useGLTF, useTexture } from "@react-three/drei";
+import { Canvas, extend, useFrame, useLoader, useThree } from "react-three-fiber";
+import { Box, OrbitControls, Plane, Reflector, Text, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import { useReflector } from "../../hooks/useReflector";
 import usePostprocessing from "../../hooks/usePostprocessing";
+import { HDRCubeTextureLoader } from "three/examples/jsm/loaders/HDRCubeTextureLoader";
+import Roboto from "../../fonts/Roboto_Medium_Regular.json";
 
 // convert THREE components to react-three-fiber
 extend({EffectComposer, ShaderPass, RenderPass, UnrealBloomPass, SSAOPass,});
@@ -35,7 +36,7 @@ const Apartments = (props) => {
   // change material settings
   useMemo(() => {
     // wall
-    materials.wallMaterial.color.set(props.buttonPressed ? "#3fa9c4" : "#ff7650");
+    materials.wallMaterial.color.set(props.buttonPressed ? "#3fa9c4" : "#849da9");
     materials.wallMaterial.metalness = 0.4;
     materials.wallMaterial.roughness = 0.9;
     // materials.wallMaterial.aoMap = null;
@@ -54,10 +55,13 @@ const Apartments = (props) => {
 
     // backdrop
     materials.backDropMaterial.color.set("#1f1f1f");
-    materials.backDropMaterial.emissiveIntensity = 1.5;
+    materials.backDropMaterial.emissiveIntensity = 2.5;
 
     // baseboard
-    materials.baseboardMaterial.color.set("#262424");
+    materials.baseboardMaterial.color.set("#a58f7f");
+
+    // window frame
+    materials.windowFrameMaterial.color.set("#b7acac");
 
     // lightMap settings
     // lightMap uv flipped by default, need to fix it
@@ -134,12 +138,68 @@ const Apartments = (props) => {
   );
 };
 
+const FurnitureChest = (props) => {
+  const group = useRef();
+  const {nodes, materials} = useGLTF('/apartment_chest.gltf');
+
+  useMemo(() => {
+    materials.furniture_white_polished_Material.color.set("#5a5352");
+    materials.furniture_white_polished_Material.roughness = 0.1;
+
+    materials.furniture_light_wood_Material.color.set("#a28e87");
+  }, [materials]);
+
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <mesh
+            castShadow={true}
+            receiveShadow={true}
+            material={materials.furniture_white_polished_Material}
+            geometry={nodes.chest_white.geometry}
+            position={[0, 0.2, 0.05]}
+            scale={[2.54, 2.54, 2.54]}
+        />
+        <mesh
+            castShadow={true}
+            receiveShadow={true}
+            material={materials.furniture_light_wood_Material}
+            geometry={nodes.chest_wood.geometry}
+            position={[-0.63, 0, 0.23]}
+            scale={[2.54, 2.54, 2.54]}
+        />
+      </group>
+  );
+};
+
+
 // preload gltf
+useGLTF.preload('/apartment_chest.gltf');
 useGLTF.preload('/apartments_base.gltf');
 
-const MyLight = () => {
+
+function Environment({background = false}) {
+  const {gl, scene} = useThree();
+  const [cubeMap] = useLoader(HDRCubeTextureLoader, [['px.hdr', 'nx.hdr', 'py.hdr', 'ny.hdr', 'pz.hdr', 'nz.hdr']], loader => {
+    loader.setDataType(THREE.UnsignedByteType);
+    loader.setPath('/hdri/');
+  });
+  useEffect(() => {
+    const gen = new THREE.PMREMGenerator(gl);
+    gen.compileEquirectangularShader();
+    const hdrCubeRenderTarget = gen.fromCubemap(cubeMap);
+    cubeMap.dispose();
+    gen.dispose();
+    if (background) scene.background = hdrCubeRenderTarget.texture;
+    scene.environment = hdrCubeRenderTarget.texture;
+    return () => (scene.environment = scene.background = null);
+  }, [cubeMap]);
+  return null;
+}
+
+const MyLight = ({intensity = 1}) => {
   // custom light object
-  const light = new THREE.DirectionalLight(0xffffff, 3, 10);
+  const light = new THREE.DirectionalLight(0xffffff, intensity, 10);
 
   // light settings
   light.position.set(20, 20, -40);
@@ -166,6 +226,66 @@ const MyLight = () => {
   );
 };
 
+const Logo = () => {
+
+  // let font = null;
+  // const loader = new THREE.FontLoader();
+  // loader.load("Roboto_Medium_Regular.json", function (response) { font = response})
+
+  // const [cubeMap] = useLoader(HDRCubeTextureLoader, [['px.hdr', 'nx.hdr', 'py.hdr', 'ny.hdr', 'pz.hdr', 'nz.hdr']], loader => {
+  //   loader.setDataType(THREE.UnsignedByteType);
+  //   loader.setPath('/hdri/');
+  // });
+  const logo = useRef();
+  useFrame(() => {
+    logo.current.rotation.x = logo.current.rotation.x += 0.01;
+  });
+
+  const font = new THREE.FontLoader().parse(Roboto);
+  const geometry = new THREE.TextGeometry("GM", {
+    font: font,
+    size: 0.8,
+    height: 0.2,
+  });
+  const material = new THREE.MeshStandardMaterial({
+    color: "#000000",
+    // envMap: cubeMap,
+    // refractionRatio: 0.9
+    roughness: 0.1
+  });
+  const textMesh = new THREE.Mesh(geometry, material);
+
+  return (
+      <primitive castShadow={true}
+                 receiveShadow={true}
+                 ref={logo}
+                 position={[-2.94, -0.2, -2]} object={textMesh}/>
+  );
+};
+
+
+const FlowBox = () => {
+  const box = useRef();
+  useFrame(() => {
+    box.current.rotation.y = box.current.rotation.y += 0.01;
+  });
+
+  const geometry = new THREE.IcosahedronGeometry(0.4);
+  const material = new THREE.MeshStandardMaterial({
+    color: "#000000",
+    metalness: 0.1,
+    roughness: 0.0
+  });
+  const boxMesh = new THREE.Mesh(geometry, material);
+
+  return (
+      <primitive castShadow={true}
+                 receiveShadow={true}
+                 position={[0, -0.34, 0]}
+                 ref={box} object={boxMesh}/>
+  );
+};
+
 const MainScene = () => {
 
   const [meshRef, ReflectorMaterial, passes] = useReflector();
@@ -174,8 +294,14 @@ const MainScene = () => {
   return (
       <scene>
         <hemisphereLight intensity={0.8}/>
-        <MyLight/>
+        <MyLight intensity={8}/>
         <Apartments position={[0.5, -1.4, 0.4]}/>
+        <Environment/>
+        <FurnitureChest position={[-2.9, -1.4, 0]}
+                        rotation={[0, Math.PI / 2, 0]}
+        />
+        <Logo/>
+        <FlowBox/>
         <Plane position={[0, -1.4, 0]}
                receiveShadow
                ref={meshRef}
@@ -185,8 +311,8 @@ const MainScene = () => {
           <ReflectorMaterial
               metalness={0.5}
               roughness={0.5}
-              clearcoat={0.5}
-              reflectorOpacity={0.2}
+              clearcoat={0.1}
+              reflectorOpacity={0.1}
           />
         </Plane>
       </scene>
@@ -201,6 +327,7 @@ export const ApartmentCalcPostReflector = () => {
                 concurrent
                 shadowMap
                 gl={{alpha: true, antialias: false}}
+                camera={{fov: 65}}
             >
               <OrbitControls/>
               <Suspense fallback={null}>
