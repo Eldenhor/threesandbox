@@ -1,7 +1,10 @@
 import styled from "styled-components";
-import { BrowserRouter as Router, Route, Link, Switch} from "react-router-dom";
+import { BrowserRouter as Router, Route, Link, Switch } from "react-router-dom";
 import { ApartmentCalcPage } from "./components/pages/apartmentCalcPage";
 import { SandBoxPage } from "./components/pages/sandBoxPage";
+import { MultipleScenePage } from "./components/pages/multipleScenePage";
+import { ReflectorPostProcessPage } from "./components/pages/reflectorPostProcessPage";
+import { ApartmentCalcPostReflectorPage } from "./components/pages/apartmentCalcPostReflectorPage";
 
 const AppWrapper = styled.div`
   margin: 40px;
@@ -28,6 +31,9 @@ function App() {
           <LinkWrapper>
             <StyledLink to="/">Apartment Calc</StyledLink>
             <StyledLink to="/sandbox">Sandbox</StyledLink>
+            <StyledLink to="/multiplescene">MultipleScene</StyledLink>
+            <StyledLink to="/rfPost">Reflector PostProcess</StyledLink>
+            <StyledLink to="/apCalcPostRef">Apartment Calc Post Reflector</StyledLink>
           </LinkWrapper>
           <Switch>
             <Route exact path="/">
@@ -35,6 +41,15 @@ function App() {
             </Route>
             <Route path="/sandbox">
               <SandBoxPage/>
+            </Route>
+            <Route path="/multiplescene">
+              <MultipleScenePage/>
+            </Route>
+            <Route path="/rfPost">
+              <ReflectorPostProcessPage/>
+            </Route>
+            <Route path="/apCalcPostRef">
+              <ApartmentCalcPostReflectorPage/>
             </Route>
           </Switch>
         </Router>

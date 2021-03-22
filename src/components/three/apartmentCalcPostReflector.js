@@ -1,24 +1,7 @@
-/*
-current pipeline:
-1. Create fbx in 3ds max (
-  material:
-    base color: base color
-    metallic: metalness
-    roughness: roughness
-    baked AO/Lightmap: diffuse roughness
-    normal map: bump > normal bump
-    emissive: emissive map, set all colors/reflect to 0
-  babylon exporter can combine bakedAO/Lightmap with roughness and metallic in one ORM map with separated channels
-)
-2. Export .gltf or .glb (combine all textures, bin meshes and material in 1 file, less editable) with babylon plugin,
-or with FBX2gltf
-3. Generate JSX structure with "npm gltfjsx filename.gltf"
-*/
-
 import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Canvas, extend, useFrame, useThree } from "react-three-fiber";
-import { Box, OrbitControls, Reflector, useGLTF, useTexture } from "@react-three/drei";
+import { Box, OrbitControls, Plane, Reflector, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -26,6 +9,8 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
+import { useReflector } from "../../hooks/useReflector";
+import usePostprocessing from "../../hooks/usePostprocessing";
 
 // convert THREE components to react-three-fiber
 extend({EffectComposer, ShaderPass, RenderPass, UnrealBloomPass, SSAOPass,});
@@ -36,12 +21,6 @@ const AparmentSceneWrapper = styled.div`
   background-color: rgb(52, 52, 52);
 
   position: relative;
-`;
-
-const Button = styled.button`
-  width: 120px;
-  height: 40px;
-  margin: 20px;
 `;
 
 const Apartments = (props) => {
@@ -134,11 +113,11 @@ const Apartments = (props) => {
             receiveShadow={true}
             material={materials.baseboardMaterial}
             geometry={nodes.doorjamb.geometry}/>
-        <mesh
-            castShadow={true}
-            receiveShadow={true}
-            material={materials.floorMaterial}
-            geometry={nodes.apartment_floor.geometry}/>
+        {/*<mesh*/}
+        {/*    castShadow={true}*/}
+        {/*    receiveShadow={true}*/}
+        {/*    material={materials.floorMaterial}*/}
+        {/*    geometry={nodes.apartment_floor.geometry}/>*/}
         <mesh
             castShadow={true}
             receiveShadow={true}
@@ -160,7 +139,7 @@ useGLTF.preload('/apartments_base.gltf');
 
 const MyLight = () => {
   // custom light object
-  const light = new THREE.DirectionalLight(0xffffff, 2, 10);
+  const light = new THREE.DirectionalLight(0xffffff, 3, 10);
 
   // light settings
   light.position.set(20, 20, -40);
@@ -187,115 +166,35 @@ const MyLight = () => {
   );
 };
 
-const HemiSphereLight = () => {
-  // custom hemiSphere light
-  const hemiLight = new THREE.HemisphereLight(0xffeeb1, null, 1.0);
+const MainScene = () => {
+
+  const [meshRef, ReflectorMaterial, passes] = useReflector();
+  usePostprocessing(passes);
 
   return (
-      <primitive object={hemiLight}/>
-  );
-};
-
-const ReflectFloor = () => {
-  const [roughness, normal, color, alpha] = useTexture(['/roughness.jpg', '/normal.jpg', '/apartment_floor_bc.jpg', "/alpha.jpg"]);
-  return (
-      <Reflector position={[0, -1.34, 0]}
-                 resolution={512}
-                 args={[8, 8]}
-                 mirror={0.9}
-                 mixBlur={10}
-                 mixStrength={0.8}
-                 rotation={[-Math.PI / 2, 0, Math.PI / 2]}
-                 blur={[10, 10]}
-                 layers={[0, 1]}
-                 debug={0}>
-        {(Material, props) => <Material metalness={0.8}
-                                        roughnessMap={roughness}
-                                        roughness={0.2}
-                                        normalMap={normal}
-                                        normalScale={[0.1, 0.1]}
-            // alphaMap={alpha}
-                                        {...props} />}
-      </Reflector>
-  );
-};
-
-const Effects = () => {
-  const composer = useRef();
-  const {scene, gl, size, camera} = useThree();
-
-  const aspect = useMemo(() => new THREE.Vector2(size.width, size.height), [size]);
-  useEffect(() => void composer.current.setSize(size.width, size.height), [size]);
-  useFrame(() => composer.current.render(), 1);
-
-  return (
-      <effectComposer ref={composer} args={[gl]}>
-        <renderPass attachArray="passes" scene={scene} camera={camera}/>
-        <sSAOPass attachArray="passes" args={[scene, camera, 1024, 1024]} kernelRadius={0.2} maxDistance={0.2}/>
-        <unrealBloomPass attachArray="passes" args={[aspect, 0.24, 0.2, 0]}/>
-        <shaderPass attachArray="passes" args={[FXAAShader]}
-                    material-uniforms-resolution-value={[1 / size.width, 1 / size.height]}/>
-      </effectComposer>
-  );
-};
-
-const MainScene = ({buttonPressed}) => {
-  const scene = useRef();
-  const {camera} = useThree();
-
-
-  useFrame(({gl}) => void ((gl.autoClear = false), gl.clearDepth(), gl.render(scene.current, camera)), 1);
-  return (
-      <scene ref={scene}>
+      <scene>
+        <hemisphereLight intensity={0.8}/>
         <MyLight/>
-        <HemiSphereLight/>
-        <pointLight layers={[1]}/>
-        {/*<axesHelper/>*/}
-        <Suspense fallback={null}>
-          <Apartments position={[0.5, -1.4, 0.4]} buttonPressed={buttonPressed}/>
-        </Suspense>
-        {/*<Effects/>*/}
+        <Apartments position={[0.5, -1.4, 0.4]}/>
+        <Plane position={[0, -1.4, 0]}
+               receiveShadow
+               ref={meshRef}
+               rotation-x={-Math.PI / 2}
+               args={[12, 12, 12]}
+        >
+          <ReflectorMaterial
+              metalness={0.5}
+              roughness={0.5}
+              clearcoat={0.5}
+              reflectorOpacity={0.2}
+          />
+        </Plane>
       </scene>
   );
 };
 
 
-const ReflectScene = () => {
-  const scene = useRef();
-  const {camera} = useThree();
-
-  useFrame(({gl}) => void ((gl.autoClear = false), gl.render(scene.current, camera)), 2);
-  return (
-      <scene ref={scene}>
-        <React.Suspense fallback={null}>
-          <ambientLight/>
-          <ReflectFloor/>
-        </React.Suspense>
-      </scene>
-  );
-};
-
-const MyCamera = () => {
-  const camera = useRef();
-  const {size, setDefaultCamera} = useThree();
-  useEffect(() => void setDefaultCamera(camera.current), []);
-  useFrame(() => camera.current.updateMatrixWorld());
-  return (
-      <perspectiveCamera
-          ref={camera}
-          aspect={size.width / size.height}
-          radius={(size.width + size.height) / 4}
-          onUpdate={self => self.updateProjectionMatrix()}
-      />
-  );
-};
-
-// uncomment Orbit Controls for free move in scene
-// lights and geometry can be used as JSX element from react-three-fiber
-// and use settings as props(ambientLight, directionalLight, Plane)
-export const ApartmentCalcScene = () => {
-      const [buttonPressed, setButtonPressed] = useState(false);
-
+export const ApartmentCalcPostReflector = () => {
       return (
           <AparmentSceneWrapper>
             <Canvas
@@ -304,13 +203,10 @@ export const ApartmentCalcScene = () => {
                 gl={{alpha: true, antialias: false}}
             >
               <OrbitControls/>
-              {/*<MyCamera/>*/}
-              <MainScene buttonPressed={buttonPressed}/>
-              {/*<ReflectScene/>*/}
+              <Suspense fallback={null}>
+                <MainScene/>
+              </Suspense>
             </Canvas>
-            <Button onClick={() => setButtonPressed(!buttonPressed)}>
-              change color
-            </Button>
           </AparmentSceneWrapper>
       );
     }
