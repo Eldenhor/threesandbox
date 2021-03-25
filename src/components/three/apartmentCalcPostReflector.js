@@ -36,7 +36,7 @@ const Apartments = (props) => {
   // change material settings
   useMemo(() => {
     // wall
-    materials.wallMaterial.color.set(props.buttonPressed ? "#3fa9c4" : "#849da9");
+    materials.wallMaterial.color.set(props.buttonPressed ? "#3fa9c4" : "#525c62");
     materials.wallMaterial.metalness = 0.4;
     materials.wallMaterial.roughness = 0.9;
     // materials.wallMaterial.aoMap = null;
@@ -173,7 +173,167 @@ const FurnitureChest = (props) => {
 };
 
 
+const Chair = (props) => {
+  const group = useRef();
+  const {nodes, materials} = useGLTF('/chair.gltf');
+
+  const material = new THREE.MeshPhysicalMaterial({
+    color: "#000000",
+    specular: "#ffffff",
+    roughness: 0.0,
+    reflectivity: 1.0,
+    shininess: 50,
+    envMapIntensity: 10.0
+  });
+
+  useMemo(() => {
+    materials.chair_leather_Material.color.set("#5a5352");
+    materials.chair_leather_Material.roughness = 0.3;
+    materials.chair_leather_Material.normalScale = new THREE.Vector2(1.0, 1.0);
+  }, [materials]);
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <mesh
+            castShadow={true}
+            receiveShadow={true}
+            material={material}
+            geometry={nodes.chair_chrome.geometry}
+            position={[-0.7, 0, 0]}/>
+        <mesh
+            material={materials.chair_leather_Material}
+            geometry={nodes.chair_leather.geometry}
+            position={[-0.7, 0, 0]}
+        />
+      </group>
+  );
+};
+
+
+const Sofa = (props) => {
+  const group = useRef();
+  const {nodes} = useGLTF('/sofa.gltf');
+
+  const material = new THREE.MeshPhysicalMaterial({
+    color: "#000000",
+    // specular: "#ffffff",
+    roughness: 0.0,
+    reflectivity: 1.0,
+    // shininess: 50,
+    envMapIntensity: 10.0
+  });
+
+  const leather = new THREE.MeshPhysicalMaterial({
+    color: "#060606",
+    roughness: 0.1,
+    reflectivity: 0.1,
+    envMapIntensity: 1.0
+  });
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <mesh
+            castShadow={true}
+            receiveShadow={true}
+            material={material}
+            geometry={nodes.sofa_chrome.geometry}
+            position={[-0.6, 0.09, 0.03]}
+        />
+        <mesh
+            castShadow={true}
+            receiveShadow={true}
+            material={leather}
+            geometry={nodes.sofa_Leather.geometry}
+            position={[-0.6, 0.23, -0.14]}
+        />
+      </group>
+  );
+};
+
+
+const Table = (props) => {
+  const {scene, gl} = useThree();
+  const group = useRef();
+  const {nodes, materials} = useGLTF('/table.gltf');
+  // // The cubeRenderTarget is used to generate a texture for the reflective sphere.
+  // // It must be updated on each frame in order to track camera movement and other changes.
+  // const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+  //   format: THREE.RGBFormat,
+  //   generateMipmaps: true,
+  //   minFilter: THREE.LinearMipmapLinearFilter
+  // });
+  // const cubeCamera = new THREE.CubeCamera(1, 100, cubeRenderTarget);
+  // cubeCamera.position.set(2, 0, 0);
+  // scene.add(cubeCamera);
+  //
+  // // Update the cubeCamera with current renderer and scene.
+  // useFrame(() => cubeCamera.update(gl, scene));
+
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    color: "#060606",
+    roughness: 0.0,
+    reflectivity: 0.0,
+    envMapIntensity: 8.0,
+    refractionRatio: 0.9,
+    transparent: true,
+    opacity: 0.5
+  });
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <mesh material={glassMaterial} geometry={nodes.table_glass.geometry} visible={true} position={[0, 0, 0]}>
+          {/*<meshPhysicalMaterial*/}
+          {/*    attach="material"*/}
+          {/*    // envMap={cubeCamera.renderTarget.texture}*/}
+          {/*    color={"#7f837c"}*/}
+          {/*    roughness={0.0}*/}
+          {/*    metalness={0.5}*/}
+          {/*    // refractionRatio={0.9}*/}
+          {/*    transparent={true}*/}
+          {/*    opacity={0.8}*/}
+          {/*/>*/}
+        </mesh>
+        <mesh material={materials.table_metal} geometry={nodes.table_metal.geometry}/>
+        <mesh material={materials.table_black_metal} geometry={nodes.table_legs.geometry}/>
+      </group>
+  );
+};
+
+const WallLight = (props) => {
+  const group = useRef();
+  const {nodes, materials} = useGLTF('/light.gltf');
+
+  useMemo(()=>{
+    materials.light_lamp.emissive.set("#ffffff")
+    materials.light_lamp.emissiveIntensity = 10.0
+  }, [materials])
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <pointLight
+            intensity={1}
+            distance={1.0}
+            color={"#ffe3d7"}
+            position={[-0.2, 0.06, 0]}/>
+        />
+        <mesh
+            material={materials.light_metal}
+            geometry={nodes.light_metal.geometry}
+            position={[0, 0.21, 0]}/>
+        <mesh
+            material={materials.light_lamp}
+            geometry={nodes.light_lamp.geometry}
+            position={[-0.09, 0.06, 0]}/>
+      </group>
+  );
+};
+
+
 // preload gltf
+useGLTF.preload('/sofa.gltf');
+useGLTF.preload('/chair.gltf');
+useGLTF.preload('/table.gltf');
+useGLTF.preload('/light.gltf');
 useGLTF.preload('/apartment_chest.gltf');
 useGLTF.preload('/apartments_base.gltf');
 
@@ -207,7 +367,7 @@ const MyLight = ({intensity = 1}) => {
   light.shadow.mapSize.width = 1024;
   light.shadow.mapSize.height = 1024;
   // fix self shadow artifacts
-  light.shadow.bias = -0.002;
+  light.shadow.bias = -0.0005;
   light.shadow.camera.near = 1;
   light.shadow.camera.far = 100;
   light.shadow.camera.top = -8;
@@ -297,11 +457,35 @@ const MainScene = () => {
         <MyLight intensity={8}/>
         <Apartments position={[0.5, -1.4, 0.4]}/>
         <Environment/>
-        <FurnitureChest position={[-2.9, -1.4, 0]}
-                        rotation={[0, Math.PI / 2, 0]}
+        <FurnitureChest position={[0.2, -1.4, 0]}
+                        rotation={[0, Math.PI / -2, 0]}
         />
-        <Logo/>
-        <FlowBox/>
+        <Chair
+            position={[-2.2, -1.4, -1.8]}
+            rotation={[0, Math.PI / 4, 0]}
+        />
+        <Chair
+            position={[-2.8, -1.4, 0.6]}
+            rotation={[0, Math.PI / 2, 0]}
+        />
+        <Sofa
+            position={[-0.2, -1.4, 1.4]}
+            rotation={[0, Math.PI / -1.5, 0]}
+        />
+        <Table
+            position={[-2.8, -1.4, 0.0]}
+            rotation={[0, Math.PI / -2, 0]}
+        />
+        <WallLight
+            position={[-3.17, 0.4, 1.6]}
+            rotation={[0, Math.PI, 0]}
+        />
+        <WallLight
+            position={[-3.17, 0.4, -1.8]}
+            rotation={[0, Math.PI, 0]}
+        />
+        {/*<Logo/>*/}
+        {/*<FlowBox/>*/}
         <Plane position={[0, -1.4, 0]}
                receiveShadow
                ref={meshRef}

@@ -113,7 +113,7 @@ function usePostprocessing(reflectorPipeline = []) {
     composer.addPass(normalPass);
     composer.addPass(depthDownsamplingPass);
     composer.addPass(aoPass);
-    // composer.addPass(effectPass)
+    composer.addPass(effectPass)
     composer.addPass(chroAbbPass);
 
     return [composer];

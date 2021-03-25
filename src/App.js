@@ -5,6 +5,7 @@ import { SandBoxPage } from "./components/pages/sandBoxPage";
 import { MultipleScenePage } from "./components/pages/multipleScenePage";
 import { ReflectorPostProcessPage } from "./components/pages/reflectorPostProcessPage";
 import { ApartmentCalcPostReflectorPage } from "./components/pages/apartmentCalcPostReflectorPage";
+import { CubeCameraPage } from "./components/pages/cubeCameraPage";
 
 const AppWrapper = styled.div`
   margin: 40px;
@@ -34,6 +35,7 @@ function App() {
             <StyledLink to="/multiplescene">MultipleScene</StyledLink>
             <StyledLink to="/rfPost">Reflector PostProcess</StyledLink>
             <StyledLink to="/apCalcPostRef">Apartment Calc Post Reflector</StyledLink>
+            <StyledLink to="/cubeCamera">CubeCamera</StyledLink>
           </LinkWrapper>
           <Switch>
             <Route exact path="/">
@@ -47,6 +49,9 @@ function App() {
             </Route>
             <Route path="/rfPost">
               <ReflectorPostProcessPage/>
+            </Route>
+            <Route path="/cubeCamera">
+              <CubeCameraPage/>
             </Route>
             <Route path="/apCalcPostRef">
               <ApartmentCalcPostReflectorPage/>
