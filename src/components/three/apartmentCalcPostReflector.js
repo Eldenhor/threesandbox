@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Canvas, extend, useFrame, useLoader, useThree } from "react-three-fiber";
-import { Box, OrbitControls, Plane, Reflector, Text, useGLTF, useTexture } from "@react-three/drei";
+import { OrbitControls, Plane, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -12,6 +12,9 @@ import { useReflector } from "../../hooks/useReflector";
 import usePostprocessing from "../../hooks/usePostprocessing";
 import { HDRCubeTextureLoader } from "three/examples/jsm/loaders/HDRCubeTextureLoader";
 import Roboto from "../../fonts/Roboto_Medium_Regular.json";
+import { useAnimations } from "@react-three/drei";
+import { SketchPicker } from "react-color";
+
 
 // convert THREE components to react-three-fiber
 extend({EffectComposer, ShaderPass, RenderPass, UnrealBloomPass, SSAOPass,});
@@ -20,8 +23,11 @@ const AparmentSceneWrapper = styled.div`
   width: 100%;
   height: 800px;
   background-color: rgb(52, 52, 52);
-
   position: relative;
+
+  @media (max-width: 480px) {
+    height: 280px;
+  }
 `;
 
 const Apartments = (props) => {
@@ -32,13 +38,25 @@ const Apartments = (props) => {
 
   // load additional textures
   const lightMapTexture = new THREE.TextureLoader().load("lightmap_baked.jpg");
+  // const wallTexture = new THREE.TextureLoader().load(`${props.wallTexture}`);
+  const wallTexture = new THREE.TextureLoader().load(`${props.wallTexture}_512_albedo.jpg`);
+  const wallTextureRoughness = new THREE.TextureLoader().load(`${props.wallTexture}_512_roughness.jpg`);
+  const wallTextureNormal = new THREE.TextureLoader().load(`${props.wallTexture}_512_normal.jpg`);
+  // wallTexture.repeat = wallTextureRoughness.repeat = wallTextureNormal.repeat = new THREE.Vector2(4, 4);
+  wallTexture.wrapS = wallTexture.wrapT = wallTextureNormal.wrapT = wallTextureNormal.wrapS = wallTextureRoughness.wrapT = wallTextureRoughness.wrapS = THREE.RepeatWrapping;
+
+  // materials.wallMaterial.needsUpdate = true;
 
   // change material settings
   useMemo(() => {
     // wall
-    materials.wallMaterial.color.set(props.buttonPressed ? "#3fa9c4" : "#525c62");
-    materials.wallMaterial.metalness = 0.4;
-    materials.wallMaterial.roughness = 0.9;
+    materials.wallMaterial.color.set(`${props.color}`);
+    materials.wallMaterial.map = wallTexture;
+    materials.wallMaterial.normalMap = wallTextureNormal;
+    materials.wallMaterial.roughnessMap = wallTextureRoughness;
+    materials.floorMaterial.normalScale = new THREE.Vector2(1.0, 1.0);
+    // materials.wallMaterial.metalness = 0.0;
+    materials.wallMaterial.roughness = 1.0;
     // materials.wallMaterial.aoMap = null;
 
     // roof
@@ -79,7 +97,7 @@ const Apartments = (props) => {
     // materials.wallMaterial.map = texture;
     // materials.wallMaterial.aoMap = null;
 
-  }, [materials, lightMapTexture, props.buttonPressed]);
+  }, [materials, lightMapTexture, wallTexture, wallTextureNormal, wallTextureRoughness, props.color]);
 
   // file structure can be generated from "npx gltfjsx filename.gltf", it creates jsx file with
   // extracted meshes and materials
@@ -87,7 +105,8 @@ const Apartments = (props) => {
       <group ref={group} {...props} dispose={null}>
         <group position={[-1.44, 1.42, -5.08]}>
           <mesh
-              castShadow={true} receiveShadow={true}
+              castShadow={true}
+              receiveShadow={true}
               material={materials.windowFrameMaterial}
               geometry={nodes.windowFrame.geometry}
               position={[0, 0, 0]}/>
@@ -117,11 +136,6 @@ const Apartments = (props) => {
             receiveShadow={true}
             material={materials.baseboardMaterial}
             geometry={nodes.doorjamb.geometry}/>
-        {/*<mesh*/}
-        {/*    castShadow={true}*/}
-        {/*    receiveShadow={true}*/}
-        {/*    material={materials.floorMaterial}*/}
-        {/*    geometry={nodes.apartment_floor.geometry}/>*/}
         <mesh
             castShadow={true}
             receiveShadow={true}
@@ -252,22 +266,8 @@ const Sofa = (props) => {
 
 
 const Table = (props) => {
-  const {scene, gl} = useThree();
   const group = useRef();
   const {nodes, materials} = useGLTF('/table.gltf');
-  // // The cubeRenderTarget is used to generate a texture for the reflective sphere.
-  // // It must be updated on each frame in order to track camera movement and other changes.
-  // const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
-  //   format: THREE.RGBFormat,
-  //   generateMipmaps: true,
-  //   minFilter: THREE.LinearMipmapLinearFilter
-  // });
-  // const cubeCamera = new THREE.CubeCamera(1, 100, cubeRenderTarget);
-  // cubeCamera.position.set(2, 0, 0);
-  // scene.add(cubeCamera);
-  //
-  // // Update the cubeCamera with current renderer and scene.
-  // useFrame(() => cubeCamera.update(gl, scene));
 
   const glassMaterial = new THREE.MeshPhysicalMaterial({
     color: "#060606",
@@ -281,18 +281,7 @@ const Table = (props) => {
 
   return (
       <group ref={group} {...props} dispose={null}>
-        <mesh material={glassMaterial} geometry={nodes.table_glass.geometry} visible={true} position={[0, 0, 0]}>
-          {/*<meshPhysicalMaterial*/}
-          {/*    attach="material"*/}
-          {/*    // envMap={cubeCamera.renderTarget.texture}*/}
-          {/*    color={"#7f837c"}*/}
-          {/*    roughness={0.0}*/}
-          {/*    metalness={0.5}*/}
-          {/*    // refractionRatio={0.9}*/}
-          {/*    transparent={true}*/}
-          {/*    opacity={0.8}*/}
-          {/*/>*/}
-        </mesh>
+        <mesh material={glassMaterial} geometry={nodes.table_glass.geometry} visible={true} position={[0, 0, 0]}/>
         <mesh material={materials.table_metal} geometry={nodes.table_metal.geometry}/>
         <mesh material={materials.table_black_metal} geometry={nodes.table_legs.geometry}/>
       </group>
@@ -303,10 +292,10 @@ const WallLight = (props) => {
   const group = useRef();
   const {nodes, materials} = useGLTF('/light.gltf');
 
-  useMemo(()=>{
-    materials.light_lamp.emissive.set("#ffffff")
-    materials.light_lamp.emissiveIntensity = 10.0
-  }, [materials])
+  useMemo(() => {
+    materials.light_lamp.emissive.set("#ffffff");
+    materials.light_lamp.emissiveIntensity = 10.0;
+  }, [materials]);
 
   return (
       <group ref={group} {...props} dispose={null}>
@@ -329,7 +318,58 @@ const WallLight = (props) => {
 };
 
 
+const Door = (props) => {
+  const group = useRef();
+  const {nodes, materials, animations} = useGLTF('/door.gltf');
+  const {actions} = useAnimations(animations, group);
+
+  useEffect(() => {
+    actions["All Animations"].play();
+  }, []);
+
+  useMemo(() => {
+    materials.door_wood_Material.emissive.set("#000000");
+    materials.door_wood_Material.metalness = 0.0;
+    materials.door_wood_Material.roughness = 1.0;
+    materials.door_wood_Material.reflectivity = 0.5;
+  }, [materials]);
+
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <group position={[0, 0, 0]}>
+          <mesh
+              name="door_handler"
+              material={materials.door_handle_Material}
+              geometry={nodes.door_handler.geometry}
+              position={[0.72, 0, 0.05]}
+              rotation={[-Math.PI / 2, 0, Math.PI]}
+          />
+          <mesh
+              material={materials.door_lock_Material}
+              geometry={nodes.door_lock.geometry}
+              position={[0.72, -0.09, 0.04]}
+              rotation={[Math.PI / 2, 0, 0]}
+          />
+          <mesh
+              material={materials.door_handle_Material}
+              geometry={nodes.door_handler_base.geometry}
+              position={[0.72, 0, 0.04]}
+              rotation={[Math.PI / 2, 0, 0]}
+          />
+          <mesh
+              material={materials.door_wood_Material}
+              geometry={nodes.door.geometry}
+              position={[0, 0, 0]}
+              rotation={[Math.PI / 2, 0, 0]}
+          />
+        </group>
+      </group>
+  );
+};
+
+
 // preload gltf
+useGLTF.preload('/door.gltf');
 useGLTF.preload('/sofa.gltf');
 useGLTF.preload('/chair.gltf');
 useGLTF.preload('/table.gltf');
@@ -353,7 +393,7 @@ function Environment({background = false}) {
     if (background) scene.background = hdrCubeRenderTarget.texture;
     scene.environment = hdrCubeRenderTarget.texture;
     return () => (scene.environment = scene.background = null);
-  }, [cubeMap]);
+  }, [cubeMap, scene, gl, background]);
   return null;
 }
 
@@ -446,7 +486,7 @@ const FlowBox = () => {
   );
 };
 
-const MainScene = () => {
+const MainScene = ({wallTexture, color}) => {
 
   const [meshRef, ReflectorMaterial, passes] = useReflector();
   usePostprocessing(passes);
@@ -455,7 +495,7 @@ const MainScene = () => {
       <scene>
         <hemisphereLight intensity={0.8}/>
         <MyLight intensity={8}/>
-        <Apartments position={[0.5, -1.4, 0.4]}/>
+        <Apartments color={color} wallTexture={wallTexture} position={[0.5, -1.4, 0.4]}/>
         <Environment/>
         <FurnitureChest position={[0.2, -1.4, 0]}
                         rotation={[0, Math.PI / -2, 0]}
@@ -484,8 +524,11 @@ const MainScene = () => {
             position={[-3.17, 0.4, -1.8]}
             rotation={[0, Math.PI, 0]}
         />
-        {/*<Logo/>*/}
-        {/*<FlowBox/>*/}
+        <Door
+            position={[0.735, -0.41, 2.11]}
+        />
+        <Logo/>
+        <FlowBox/>
         <Plane position={[0, -1.4, 0]}
                receiveShadow
                ref={meshRef}
@@ -493,10 +536,10 @@ const MainScene = () => {
                args={[12, 12, 12]}
         >
           <ReflectorMaterial
-              metalness={0.5}
-              roughness={0.5}
+              metalness={0.8}
+              roughness={0.1}
               clearcoat={0.1}
-              reflectorOpacity={0.1}
+              reflectorOpacity={0.2}
           />
         </Plane>
       </scene>
@@ -505,6 +548,15 @@ const MainScene = () => {
 
 
 export const ApartmentCalcPostReflector = () => {
+
+      const [wallTexture, setWallTexture] = useState("TexturesCom_Fabric_SilkMedieval");
+      const [color, setColor] = useState("#ffffff");
+
+      const colorHandler = (colorValue) => {
+        setColor(colorValue.hex);
+        console.log(colorValue.hex);
+      };
+
       return (
           <AparmentSceneWrapper>
             <Canvas
@@ -512,12 +564,26 @@ export const ApartmentCalcPostReflector = () => {
                 shadowMap
                 gl={{alpha: true, antialias: false}}
                 camera={{fov: 65}}
+                resize={{scroll: false}}
             >
               <OrbitControls/>
               <Suspense fallback={null}>
-                <MainScene/>
+                <MainScene wallTexture={wallTexture} color={color}/>
               </Suspense>
             </Canvas>
+            <button onClick={() => setWallTexture("TexturesCom_Fabric_SilkMedieval")}>
+              wallpaper
+            </button>
+            <button onClick={() => setWallTexture("TexturesCom_Marble_TilesGeometric3")}>
+              tile
+            </button>
+            <button onClick={() => setWallTexture("TexturesCom_Wood_PlanksPainted2")}>
+              paint
+            </button>
+            <SketchPicker
+                color={color}
+                onChangeComplete={colorHandler}
+            />
           </AparmentSceneWrapper>
       );
     }

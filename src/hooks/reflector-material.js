@@ -1,7 +1,7 @@
 import { useTexture } from "@react-three/drei";
-import React, { useEffect, useState } from "react";
-import { useFrame } from "react-three-fiber";
-import { MeshPhysicalMaterial, DoubleSide, RepeatWrapping } from "three";
+import React, { useState } from "react";
+import { MeshPhysicalMaterial } from "three";
+import * as THREE from 'three';
 
 class ReflectorMaterialImpl extends MeshPhysicalMaterial {
   _flowMapOffset0;
@@ -18,10 +18,10 @@ class ReflectorMaterialImpl extends MeshPhysicalMaterial {
     this._flowMapOffset0 = {value: null};
     this._flowMapOffset1 = {value: null};
     this._tDiffuse = {value: null};
-    this._tNormalMap0 = {value: null};
-    this._tNormalMap1 = {value: null};
     this._textureMatrix = {value: null};
     this._reflectorOpacity = {value: 0.2};
+    this._tNormalMap0 = {value: null};
+    this._tNormalMap1 = {value: null};
   }
 
   onBeforeCompile(shader) {
@@ -162,9 +162,6 @@ class ReflectorMaterialImpl extends MeshPhysicalMaterial {
 export const ReflectorMaterial = ({savePass, textureMatrix}) =>
     React.forwardRef((props, ref) => {
       const [material] = useState(() => new ReflectorMaterialImpl());
-      // const cycle = 1.0;
-      // const halfCycle = cycle / 2;
-      // const flowSpeed = 100;
 
       const [
         baseMap,
@@ -172,12 +169,19 @@ export const ReflectorMaterial = ({savePass, textureMatrix}) =>
         heightMap,
         normalMap,
         roughnessMap] = useTexture([
-        "/apartment_floor_bc.jpg", // base
+        // "/apartment_floor_bc.jpg", // base
+        "/TexturesCom_Marble_TilesGeometric3_512_albedo.jpg", // base
         "/ao.jpg", // ao
         "/alpha.jpg", // height
-        "/apartment_floor_n.jpg", // normal
-        "/roughness.jpg", // roughness
+        // "/apartment_floor_n.jpg", // normal
+        "/TexturesCom_Marble_TilesGeometric3_512_normal.jpg", // normal
+        // "/roughness.jpg", // roughness
+        "/TexturesCom_Marble_TilesGeometric3_512_roughness.jpg", // roughness
       ]);
+
+      baseMap.repeat = roughnessMap.repeat = normalMap.repeat = new THREE.Vector2(4, 4);
+      baseMap.wrapS = baseMap.wrapT = normalMap.wrapT = normalMap.wrapS = roughnessMap.wrapT = roughnessMap.wrapS = THREE.RepeatWrapping;
+
       return (
           <primitive
               object={material}
@@ -195,7 +199,7 @@ export const ReflectorMaterial = ({savePass, textureMatrix}) =>
               normalMap={normalMap}
               normalScale={[0.1, 0.1]}
               roughnessMap={roughnessMap}
-              roughness={0.5}
+              roughness={0.1}
               // tNormalMap0={water[0]}
               // tNormalMap1={water[1]}
           />

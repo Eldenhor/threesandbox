@@ -113,8 +113,8 @@ function usePostprocessing(reflectorPipeline = []) {
     composer.addPass(normalPass);
     composer.addPass(depthDownsamplingPass);
     composer.addPass(aoPass);
-    composer.addPass(effectPass)
-    composer.addPass(chroAbbPass);
+    composer.addPass(effectPass);
+    // composer.addPass(chroAbbPass);
 
     return [composer];
   }, [gl, scene, camera, reflectorPipeline, smaa]);

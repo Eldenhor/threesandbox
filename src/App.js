@@ -6,9 +6,14 @@ import { MultipleScenePage } from "./components/pages/multipleScenePage";
 import { ReflectorPostProcessPage } from "./components/pages/reflectorPostProcessPage";
 import { ApartmentCalcPostReflectorPage } from "./components/pages/apartmentCalcPostReflectorPage";
 import { CubeCameraPage } from "./components/pages/cubeCameraPage";
+import { MaterialPickerPage } from "./components/pages/materialPickerPage";
 
 const AppWrapper = styled.div`
   margin: 40px;
+  
+  @media (max-width: 480px) {
+    margin: 0
+  }
 `;
 
 const LinkWrapper = styled.div`
@@ -36,6 +41,7 @@ function App() {
             <StyledLink to="/rfPost">Reflector PostProcess</StyledLink>
             <StyledLink to="/apCalcPostRef">Apartment Calc Post Reflector</StyledLink>
             <StyledLink to="/cubeCamera">CubeCamera</StyledLink>
+            <StyledLink to="/materialPicker">Material Picker</StyledLink>
           </LinkWrapper>
           <Switch>
             <Route exact path="/">
@@ -55,6 +61,9 @@ function App() {
             </Route>
             <Route path="/apCalcPostRef">
               <ApartmentCalcPostReflectorPage/>
+            </Route>
+            <Route path="/materialPicker">
+              <MaterialPickerPage/>
             </Route>
           </Switch>
         </Router>

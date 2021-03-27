@@ -15,17 +15,17 @@ or with FBX2gltf
 3. Generate JSX structure with "npm gltfjsx filename.gltf"
 */
 
-import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
+import React, { Suspense,  useState, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Canvas, extend, useFrame, useThree } from "react-three-fiber";
-import { Box, OrbitControls, Reflector, useGLTF, useTexture } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
+// import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 
 // convert THREE components to react-three-fiber
 extend({EffectComposer, ShaderPass, RenderPass, UnrealBloomPass, SSAOPass,});
@@ -196,48 +196,48 @@ const HemiSphereLight = () => {
   );
 };
 
-const ReflectFloor = () => {
-  const [roughness, normal, color, alpha] = useTexture(['/roughness.jpg', '/normal.jpg', '/apartment_floor_bc.jpg', "/alpha.jpg"]);
-  return (
-      <Reflector position={[0, -1.34, 0]}
-                 resolution={512}
-                 args={[8, 8]}
-                 mirror={0.9}
-                 mixBlur={10}
-                 mixStrength={0.8}
-                 rotation={[-Math.PI / 2, 0, Math.PI / 2]}
-                 blur={[10, 10]}
-                 layers={[0, 1]}
-                 debug={0}>
-        {(Material, props) => <Material metalness={0.8}
-                                        roughnessMap={roughness}
-                                        roughness={0.2}
-                                        normalMap={normal}
-                                        normalScale={[0.1, 0.1]}
-            // alphaMap={alpha}
-                                        {...props} />}
-      </Reflector>
-  );
-};
+// const ReflectFloor = () => {
+//   const [roughness, normal] = useTexture(['/roughness.jpg', '/normal.jpg', '/apartment_floor_bc.jpg', "/alpha.jpg"]);
+//   return (
+//       <Reflector position={[0, -1.34, 0]}
+//                  resolution={512}
+//                  args={[8, 8]}
+//                  mirror={0.9}
+//                  mixBlur={10}
+//                  mixStrength={0.8}
+//                  rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+//                  blur={[10, 10]}
+//                  layers={[0, 1]}
+//                  debug={0}>
+//         {(Material, props) => <Material metalness={0.8}
+//                                         roughnessMap={roughness}
+//                                         roughness={0.2}
+//                                         normalMap={normal}
+//                                         normalScale={[0.1, 0.1]}
+//             // alphaMap={alpha}
+//                                         {...props} />}
+//       </Reflector>
+//   );
+// };
 
-const Effects = () => {
-  const composer = useRef();
-  const {scene, gl, size, camera} = useThree();
-
-  const aspect = useMemo(() => new THREE.Vector2(size.width, size.height), [size]);
-  useEffect(() => void composer.current.setSize(size.width, size.height), [size]);
-  useFrame(() => composer.current.render(), 1);
-
-  return (
-      <effectComposer ref={composer} args={[gl]}>
-        <renderPass attachArray="passes" scene={scene} camera={camera}/>
-        <sSAOPass attachArray="passes" args={[scene, camera, 1024, 1024]} kernelRadius={0.2} maxDistance={0.2}/>
-        <unrealBloomPass attachArray="passes" args={[aspect, 0.24, 0.2, 0]}/>
-        <shaderPass attachArray="passes" args={[FXAAShader]}
-                    material-uniforms-resolution-value={[1 / size.width, 1 / size.height]}/>
-      </effectComposer>
-  );
-};
+// const Effects = () => {
+//   const composer = useRef();
+//   const {scene, gl, size, camera} = useThree();
+//
+//   const aspect = useMemo(() => new THREE.Vector2(size.width, size.height), [size]);
+//   useEffect(() => void composer.current.setSize(size.width, size.height), [size]);
+//   useFrame(() => composer.current.render(), 1);
+//
+//   return (
+//       <effectComposer ref={composer} args={[gl]}>
+//         <renderPass attachArray="passes" scene={scene} camera={camera}/>
+//         <sSAOPass attachArray="passes" args={[scene, camera, 1024, 1024]} kernelRadius={0.2} maxDistance={0.2}/>
+//         <unrealBloomPass attachArray="passes" args={[aspect, 0.24, 0.2, 0]}/>
+//         <shaderPass attachArray="passes" args={[FXAAShader]}
+//                     material-uniforms-resolution-value={[1 / size.width, 1 / size.height]}/>
+//       </effectComposer>
+//   );
+// };
 
 const MainScene = ({buttonPressed}) => {
   const scene = useRef();
@@ -260,35 +260,35 @@ const MainScene = ({buttonPressed}) => {
 };
 
 
-const ReflectScene = () => {
-  const scene = useRef();
-  const {camera} = useThree();
+// const ReflectScene = () => {
+//   const scene = useRef();
+//   const {camera} = useThree();
+//
+//   useFrame(({gl}) => void ((gl.autoClear = false), gl.render(scene.current, camera)), 2);
+//   return (
+//       <scene ref={scene}>
+//         <React.Suspense fallback={null}>
+//           <ambientLight/>
+//           <ReflectFloor/>
+//         </React.Suspense>
+//       </scene>
+//   );
+// };
 
-  useFrame(({gl}) => void ((gl.autoClear = false), gl.render(scene.current, camera)), 2);
-  return (
-      <scene ref={scene}>
-        <React.Suspense fallback={null}>
-          <ambientLight/>
-          <ReflectFloor/>
-        </React.Suspense>
-      </scene>
-  );
-};
-
-const MyCamera = () => {
-  const camera = useRef();
-  const {size, setDefaultCamera} = useThree();
-  useEffect(() => void setDefaultCamera(camera.current), []);
-  useFrame(() => camera.current.updateMatrixWorld());
-  return (
-      <perspectiveCamera
-          ref={camera}
-          aspect={size.width / size.height}
-          radius={(size.width + size.height) / 4}
-          onUpdate={self => self.updateProjectionMatrix()}
-      />
-  );
-};
+// const MyCamera = () => {
+//   const camera = useRef();
+//   const {size, setDefaultCamera} = useThree();
+//   useEffect(() => void setDefaultCamera(camera.current), []);
+//   useFrame(() => camera.current.updateMatrixWorld());
+//   return (
+//       <perspectiveCamera
+//           ref={camera}
+//           aspect={size.width / size.height}
+//           radius={(size.width + size.height) / 4}
+//           onUpdate={self => self.updateProjectionMatrix()}
+//       />
+//   );
+// };
 
 // uncomment Orbit Controls for free move in scene
 // lights and geometry can be used as JSX element from react-three-fiber
