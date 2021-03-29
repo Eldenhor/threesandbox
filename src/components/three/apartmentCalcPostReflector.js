@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Canvas, extend, useFrame, useLoader, useThree } from "react-three-fiber";
-import { OrbitControls, Plane, useGLTF } from "@react-three/drei";
+import { Html, OrbitControls, Plane, useGLTF, useProgress, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -30,6 +30,33 @@ const AparmentSceneWrapper = styled.div`
   }
 `;
 
+const LoadingBackground = styled.div`
+  background-color: red;
+`;
+
+const HtmlLoader = styled(Html)`
+  background-color: green;
+`;
+
+// const LoadingStatus = styled.p`
+//   display: flex;
+//   flex-direction: column;
+//   text-align: center;
+//   color: white
+// `
+
+export default function Model(props) {
+  const group = useRef();
+  const {nodes, materials} = useGLTF('/baseBoardSmall.gltf');
+  return (
+      <group ref={group} {...props} dispose={null}>
+        <mesh material={materials.baseboardMaterial} geometry={nodes.baseBoardSmall.geometry} position={[0, 0, 0]}/>
+      </group>
+  );
+}
+
+useGLTF.preload('/baseBoardSmall.gltf');
+
 const Apartments = (props) => {
   const group = useRef();
 
@@ -37,11 +64,19 @@ const Apartments = (props) => {
   const {nodes, materials} = useGLTF('/apartments_base.gltf');
 
   // load additional textures
-  const lightMapTexture = new THREE.TextureLoader().load("lightmap_baked.jpg");
+  // const lightMapTexture = new THREE.TextureLoader().load("lightmap_baked.jpg");
+  const lightMapTexture = useTexture("/lightmap_baked.jpg");
   // const wallTexture = new THREE.TextureLoader().load(`${props.wallTexture}`);
-  const wallTexture = new THREE.TextureLoader().load(`${props.wallTexture}_512_albedo.jpg`);
-  const wallTextureRoughness = new THREE.TextureLoader().load(`${props.wallTexture}_512_roughness.jpg`);
-  const wallTextureNormal = new THREE.TextureLoader().load(`${props.wallTexture}_512_normal.jpg`);
+  // const wallTexture = new THREE.TextureLoader().load(`${props.wallTexture}_512_albedo.jpg`);
+
+  const wallTexture = useTexture(`${props.wallTexture}_512_albedo.jpg`);
+  const wallTextureRoughness = useTexture(`${props.wallTexture}_512_roughness.jpg`);
+  const wallTextureNormal = useTexture(`${props.wallTexture}_512_normal.jpg`);
+
+  console.log(props.wallTexture);
+  console.log(wallTexture);
+  // const wallTextureRoughness = new THREE.TextureLoader().load(`${props.wallTexture}_512_roughness.jpg`);
+  // const wallTextureNormal = new THREE.TextureLoader().load(`${props.wallTexture}_512_normal.jpg`);
   // wallTexture.repeat = wallTextureRoughness.repeat = wallTextureNormal.repeat = new THREE.Vector2(4, 4);
   wallTexture.wrapS = wallTexture.wrapT = wallTextureNormal.wrapT = wallTextureNormal.wrapS = wallTextureRoughness.wrapT = wallTextureRoughness.wrapS = THREE.RepeatWrapping;
 
@@ -129,8 +164,8 @@ const Apartments = (props) => {
             castShadow={true}
             receiveShadow={true}
             material={materials.baseboardMaterial}
-            geometry={nodes.baseBoard.geometry}
-            position={[0, 0, 0]}/>
+            geometry={nodes[`${props.baseBoardGeo}`].geometry}
+        />
         <mesh
             castShadow={true}
             receiveShadow={true}
@@ -193,10 +228,10 @@ const Chair = (props) => {
 
   const material = new THREE.MeshPhysicalMaterial({
     color: "#000000",
-    specular: "#ffffff",
+    // specular: "#ffffff",
     roughness: 0.0,
     reflectivity: 1.0,
-    shininess: 50,
+    // shininess: 50,
     envMapIntensity: 10.0
   });
 
@@ -324,8 +359,26 @@ const Door = (props) => {
   const {actions} = useAnimations(animations, group);
 
   useEffect(() => {
-    actions["All Animations"].play();
+    actions.openDoor.clampWhenFinished = true;
+    actions.openDoor.clampWhenFinished = true;
+    actions.openDoor.setLoop(THREE.LoopOnce);
+    actions.closeDoor.setLoop(THREE.LoopOnce);
   }, []);
+
+  const openDoor = () => {
+    actions.openDoor.play();
+    actions.closeDoor.stop();
+  };
+
+  const closeDoor = () => {
+    actions.closeDoor.play();
+    actions.openDoor.stop();
+  };
+
+  useEffect(() => {
+    props.doorClosed ? openDoor() : closeDoor();
+  }, [props.doorClosed]);
+
 
   useMemo(() => {
     materials.door_wood_Material.emissive.set("#000000");
@@ -426,7 +479,7 @@ const MyLight = ({intensity = 1}) => {
   );
 };
 
-const Logo = () => {
+const Logo = (props) => {
 
   // let font = null;
   // const loader = new THREE.FontLoader();
@@ -453,13 +506,23 @@ const Logo = () => {
     // refractionRatio: 0.9
     roughness: 0.1
   });
-  const textMesh = new THREE.Mesh(geometry, material);
+  // const textMesh = new THREE.Mesh(geometry, material);
 
   return (
-      <primitive castShadow={true}
-                 receiveShadow={true}
-                 ref={logo}
-                 position={[-2.94, -0.2, -2]} object={textMesh}/>
+      // <primitive castShadow={true}
+      //            receiveShadow={true}
+      //            ref={logo}
+      //            position={[-2.94, -0.2, -2]} object={textMesh}/>
+      <mesh
+          castShadow={true}
+          receiveShadow={true}
+          {...props}
+          ref={logo}
+          geometry={geometry}
+          material={material}
+          position={[-2.94, -0.2, -2]}
+      >
+      </mesh>
   );
 };
 
@@ -476,17 +539,26 @@ const FlowBox = () => {
     metalness: 0.1,
     roughness: 0.0
   });
-  const boxMesh = new THREE.Mesh(geometry, material);
+  // const boxMesh = new THREE.Mesh(geometry, material);
 
   return (
-      <primitive castShadow={true}
-                 receiveShadow={true}
-                 position={[0, -0.34, 0]}
-                 ref={box} object={boxMesh}/>
+      // <primitive castShadow={true}
+      //            receiveShadow={true}
+      //            position={[0, -0.34, 0]}
+      //            ref={box} object={boxMesh}/>
+      <mesh
+          castShadow={true}
+          receiveShadow={true}
+          position={[0, -0.34, 0]}
+          ref={box}
+          geometry={geometry}
+          material={material}
+      >
+      </mesh>
   );
 };
 
-const MainScene = ({wallTexture, color}) => {
+const MainScene = ({wallTexture, color, baseBoardGeo, doorClosed}) => {
 
   const [meshRef, ReflectorMaterial, passes] = useReflector();
   usePostprocessing(passes);
@@ -495,7 +567,21 @@ const MainScene = ({wallTexture, color}) => {
       <scene>
         <hemisphereLight intensity={0.8}/>
         <MyLight intensity={8}/>
-        <Apartments color={color} wallTexture={wallTexture} position={[0.5, -1.4, 0.4]}/>
+        <Suspense fallback={
+          <Apartments
+              color={color}
+              wallTexture={"TexturesCom_Fabric_SilkMedieval"}
+              baseBoardGeo={baseBoardGeo}
+              position={[0.5, -1.4, 0.4]}
+          />
+        }>
+          <Apartments
+              color={color}
+              wallTexture={wallTexture}
+              baseBoardGeo={baseBoardGeo}
+              position={[0.5, -1.4, 0.4]}
+          />
+        </Suspense>
         <Environment/>
         <FurnitureChest position={[0.2, -1.4, 0]}
                         rotation={[0, Math.PI / -2, 0]}
@@ -525,6 +611,7 @@ const MainScene = ({wallTexture, color}) => {
             rotation={[0, Math.PI, 0]}
         />
         <Door
+            doorClosed={doorClosed}
             position={[0.735, -0.41, 2.11]}
         />
         <Logo/>
@@ -547,10 +634,28 @@ const MainScene = ({wallTexture, color}) => {
 };
 
 
+const Loader = () => {
+  const {progress} = useProgress();
+
+  return (
+      <HtmlLoader center>
+        <LoadingBackground>
+          <p>Loading</p>
+          <p>{progress}</p>
+        </LoadingBackground>
+      </HtmlLoader>
+  );
+};
+
+
 export const ApartmentCalcPostReflector = () => {
 
       const [wallTexture, setWallTexture] = useState("TexturesCom_Fabric_SilkMedieval");
       const [color, setColor] = useState("#ffffff");
+
+      const [baseBoardGeo, setBaseBoardGeo] = useState("baseBoard");
+
+      const [doorClosed, setDoorClosed] = useState(false);
 
       const colorHandler = (colorValue) => {
         setColor(colorValue.hex);
@@ -567,8 +672,13 @@ export const ApartmentCalcPostReflector = () => {
                 resize={{scroll: false}}
             >
               <OrbitControls/>
-              <Suspense fallback={null}>
-                <MainScene wallTexture={wallTexture} color={color}/>
+              <Suspense fallback={<Loader/>}>
+                <MainScene
+                    wallTexture={wallTexture}
+                    color={color}
+                    baseBoardGeo={baseBoardGeo}
+                    doorClosed={doorClosed}
+                />
               </Suspense>
             </Canvas>
             <button onClick={() => setWallTexture("TexturesCom_Fabric_SilkMedieval")}>
@@ -579,6 +689,15 @@ export const ApartmentCalcPostReflector = () => {
             </button>
             <button onClick={() => setWallTexture("TexturesCom_Wood_PlanksPainted2")}>
               paint
+            </button>
+            <button onClick={() => setBaseBoardGeo("baseBoard")}>
+              baseBoard
+            </button>
+            <button onClick={() => setBaseBoardGeo("baseBoardSmall")}>
+              baseBoardSmall
+            </button>
+            <button onClick={() => setDoorClosed(!doorClosed)}>
+              door
             </button>
             <SketchPicker
                 color={color}

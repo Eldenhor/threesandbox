@@ -2,7 +2,7 @@ import React, { useState, Suspense } from "react";
 import { Canvas} from "react-three-fiber";
 import styled from "styled-components";
 import * as THREE from 'three';
-import { OrbitControls, useTexture } from "@react-three/drei";
+import { Html, OrbitControls, useProgress, useTexture } from "@react-three/drei";
 import { SketchPicker } from "react-color";
 
 
@@ -35,6 +35,13 @@ const Button = styled.button`
   width: 220px;
 `
 
+const LoadingStatus = styled.p`
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  color: white
+`
+
 const BoxMesh = ({color}) => {
 
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -54,13 +61,19 @@ const BoxMesh = ({color}) => {
 
 
 const PlaneMesh = ({color, textureName}) => {
+  // useTexture.preload("/TexturesCom_Fabric_SilkMedieval_512_albedo.jpg")
+  // useTexture.preload("/TexturesCom_Marble_TilesGeometric3_512_albedo.jpg")
+  useTexture.preload("/checker.jpg")
 
+  const loadingMap = useTexture(`/checker.jpg`)
   const colorMap = useTexture(`/${textureName}.jpg`)
+
+  console.log(colorMap)
 
   const planeGeo = new THREE.PlaneGeometry(4, 4);
   const material = new THREE.MeshPhysicalMaterial({
     color: color,
-    map: colorMap
+    map: colorMap ? colorMap : loadingMap
   });
 
   const planeMesh = new THREE.Mesh(planeGeo, material);
@@ -75,6 +88,22 @@ const PlaneMesh = ({color, textureName}) => {
       />
   );
 };
+
+const Loader = () => {
+  const {progress} = useProgress()
+  return(
+      <Html center>
+        <LoadingStatus>
+          <p>
+            {progress}
+          </p>
+          <p>
+            % loading
+          </p>
+        </LoadingStatus>
+      </Html>
+  )
+}
 
 export const MaterialPickerScene = () => {
 
@@ -95,11 +124,13 @@ export const MaterialPickerScene = () => {
               shadowMap
           >
             <Suspense fallback={null}>
-              <hemisphereLight intensity={0.1}/>
-              <spotLight castShadow={true} position={[0.7, 2, 0.7]} intensity={0.4}/>
-              <OrbitControls/>
-              <BoxMesh color={boxColor}/>
-              <PlaneMesh color={planeColor} textureName={textureName}/>
+              <React.Suspense fallback={<Loader/>}>
+                <hemisphereLight intensity={0.1}/>
+                <spotLight castShadow={true} position={[0.7, 2, 0.7]} intensity={0.4}/>
+                <OrbitControls/>
+                <BoxMesh color={boxColor}/>
+                <PlaneMesh color={planeColor} textureName={textureName}/>
+              </React.Suspense>
             </Suspense>
           </Canvas>
         <ColorPickerWrapper>
